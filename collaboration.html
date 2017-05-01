@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<title>collaborations between authors</title>
-		<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"> </script> 
+		<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"> </script> 
 		<!-- <script type="text/javascript" src="d3.v3.js"> </script> -->
 		
 		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
@@ -20,7 +20,7 @@
 			.node text {
 				pointer-events: none;
 			 	font: 10px sans-serif;
-			  	
+			  	stroke: #999;
 			}
 		</style>
 	</head>
@@ -60,103 +60,106 @@
 					reset();
 				}
 			});
-			var width = 960,
-		    	height = 500
-
+			var width = 1000,
+				height =960;
+			var rScale = d3.scaleLinear();
+			var color = d3.scaleOrdinal(d3.schemeCategory20);
 			var svg = d3.select("#forcegraph").append("svg")
 		    	.attr("width", width)
 		    	.attr("height", height);
 
-			var force = d3.layout.force()
-		    	.gravity(0.05)
-		    	
-		    	.charge(-100)
-		    	.size([width, height]);
+			var forceSimulation = d3.forceSimulation()
+				.force("charge", d3.forceManyBody().strength(-10))
+			    .force("link", d3.forceLink().id(function(d) { return d.authorid; })
+				.distance(20))
+			    .force("x", d3.forceX(width / 2))
+			    .force("y", d3.forceY(height / 2))
+				.on("tick", tick);
+			function tick() {
+				link.attr("x1", function(d) { return d.source.x; })
+				    .attr("y1", function(d) { return d.source.y; })
+				    .attr("x2", function(d) { return d.target.x; })
+					.attr("y2", function(d) { return d.target.y; });
+				node.attr("cx", function(d) { return d.x; })
+			        .attr("cy", function(d) { return d.y; });
+				}
 			initial()
 			function reset(){
 				d3.selectAll('svg > *').remove();
 				initial();
 			}
+			var link = svg.selectAll(".link"),
+		    	node = svg.selectAll(".node");
+			var text = svg.selectAll(".text");
+							
 			function initial(){
-				d3.csv(filepath+"_cooperation.csv", function(error, links) {
+				d3.csv(filepath+"_GN.csv", function(error, nodes) {
 					if (error) throw error;
-					var nodesByName = {};
-					links.forEach(function(link) {
-					    link.source = nodeByName(link.source);
-					    link.target = nodeByName(link.target);
-						link.value = nodeByName(link.valu);
+					var rranges = []
+					nodes.forEach(function(d){
+						rranges.push(d["articlenumber"]);
 					});
-					var nodes = d3.values(nodesByName);
+					rScale.domain([d3.min(rranges),d3.max(rranges)]).range([3, 6]);
 					
-			  	  	var link = svg.selectAll(".link")
-			        	.data(links)
-			      		.enter().append("line")
-			        	.attr("class", "link");
-				  	var node = svg.selectAll(".node")
-				        .data(nodes)
-				      	.enter().append("circle")
-				        .attr("class", "node")
-				        .attr("r", 4.5)
-				        .call(force.drag);
-				  	force.nodes(nodes)
-				        .links(links)
-						.linkDistance(100)
-				        .on("tick", tick)
-				        .start();
-					function tick() {
-						link.attr("x1", function(d) { return d.source.x; })
-					        .attr("y1", function(d) { return d.source.y; })
-					        .attr("x2", function(d) { return d.target.x; })
-					        .attr("y2", function(d) { return d.target.y; });
+					d3.csv(filepath+"_cooperation.csv", function(error, links) {
+						if (error) throw error;
+						forceSimulation.nodes(nodes);
+						forceSimulation.force("link").links(links);
+						link = link
+							.data(links)
+						    .enter().append("line")
+							.attr("class", "link");
+						node = node
+							.data(nodes)
+						    .enter().append("circle")
+						    .attr("class", "node")
+						    .attr("r", function(d){
+						    	return rScale(d.articlenumber);
+						    })
+						    .style("fill", function(d) {
+								return color(d.clusterid);
+							})
+						    .style("opacity", 0.6)
+							.call(d3.drag()
+                			.on("start", dragstarted)
+                			.on("drag", dragged)
+                			.on("end", dragended))
+							.on("mouseover", mouseover)
+					        .on("mouseout", mouseout);
+					        
+						function mouseover(){
+							console.log("mouseover");
+						  	d3.select(this).select("circle").transition()
+						      .duration(750)
+						      .attr("r", 16);
+						}
 
-						node.attr("cx", function(d) { return d.x; })
-					        .attr("cy", function(d) { return d.y; });
-					  	}
-					function nodeByName(name) {
-					    return nodesByName[name] || (nodesByName[name] = {name: name});
-					}
+						function mouseout() {
+							  d3.select(this).select("circle").transition()
+							      .duration(750)
+							      .attr("r", 8);
+							}	
+					  	
+						function dragstarted(d) {
+				            if (!d3.event.active) forceSimulation.alphaTarget(0.3).restart();
+						    	d.fx = d.x;
+								d.fy = d.y;
+						    }
+						function dragged(d) {
+				            d.fx = d3.event.x;
+				            d.fy = d3.event.y;
+						}
+        
+						function dragended(d) {
+				            if (!d3.event.active) forceSimulation.alphaTarget(0);
+								d.fx = null;
+						        d.fy = null;
+					        } 
+					});
+					
 				});
-				
-				// d3.csv(filepath+"_GN.csv", function(error, GNdata) {
-// 					if (error) { //if error !=null print out the error in console
-// 						console.log(error); }
-// 					else {
-// 						var nodes=GNdata
-//
-// 						d3.csv(filepath+"_cooperation.csv", function(error, Coocdata) {
-// 							if (error) { //if error !=null print out the error in console
-// 								console.log(error); }
-// 							else {
-// 								var links=Coocdata
-// 								console.log("++++++++++++++++++++++++++++++++++");
-// 								// +++++++++++++++++++++++++++++++++++++++++++++
-// 						  	  	force
-// 						        	.nodes(GNdata)
-// 						        	.links(Coocdata)
-// 						        	.start();
-// 							  	var link = svg.selectAll(".link")
-// 							        .data(links)
-// 							      	.enter().append("line")
-// 							        .attr("class", "link");
-// 							  	var node = svg.selectAll(".node")
-// 							        .data(nodes)
-// 							      	.enter().append("g")
-// 							        .attr("class", "node")
-// 							        .call(force.drag);
-// 							  	xnode.append("image")
-// 							        .attr("xlink:href", "https://github.com/favicon.ico")
-// 							        .attr("x", -8)
-// 							        .attr("y", -8)
-// 							        .attr("width", 16)
-// 							        .attr("height", 16);
-// 								node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
-// 								// +++++++++++++++++++++++++++++++++++++++++++++
-//
-// 							}
-// 						});
-//
-// 					}
-// 				});
+			
+
 			}
 			
 		</script>
