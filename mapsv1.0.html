@@ -1,0 +1,133 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>country's publication'</title>
+		<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"> </script> 
+		<!-- <script type="text/javascript" src="d3.v3.js"> </script> -->
+		<script src="http://d3js.org/topojson.v0.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+		<style>
+			body {
+				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				width: 1200px;
+				height: 900px;
+				position: relative;
+			}
+			path {
+			  stroke: white;
+			  stroke-width: 0.25px;
+			  fill: grey;
+			}
+		</style>
+	</head>
+	<body>
+		<table width="100%" border="0">
+			<tr>
+				<td colspan="3" bgcolor="#b5dcb3">
+					<div class = "sourceSet" style="display:inline">
+						<div style="font-size: 16px; display:inline;">Source</div>
+						<div style=" display:inline;" >
+							<select id = "sourceselect"> </select>
+				 		</div>
+					</div>
+				</td>
+	     	</tr>
+			<tr valign="top">
+				<td bgcolor="#aaa" width="20%">
+		      
+		    	</td>
+		    	<td bgcolor="#b5dcb3" height="800" width="60%">
+					<div id = "geomap" style="margin-top: 0px; margin-bottom: 15px; border: 2px solid black">
+				
+					</div>
+		   	 	</td>
+		    	<td bgcolor="#aaa" width="20%">
+		     
+		    	</td>
+			</tr>
+		</table>  
+		
+		<script type="text/javascript"> 
+			var filepath = "dataset/itsec"
+			var sselect=d3.select("#sourceselect");
+			var soptions=sselect.selectAll('option').data(["IEEE intelligent tranporationsystem", "IEEE Transactions on Evolutionary Computation", "IEEE ITS conference"])
+				.enter().append('option').text(function(d){
+					return d;
+				}).property("selected", function(d){ return d == "IEEE Transactions on Evolutionary Computation"; });
+			sselect.on("change",function(){
+				var sstr= d3.select('#sourceselect').node().value;
+				if(sstr == "IEEE intelligent tranporationsystem"){
+					filepath =  "dataset/its2"
+					reset();
+				}
+				else if(sstr == "IEEE Transactions on Evolutionary Computation"){
+					filepath =  "dataset/itsec"
+					reset();
+				}
+				else {
+					filepath =  "dataset/itsconf"
+					reset();
+				}
+			});
+			
+			initial()
+			function reset(){
+				d3.selectAll('svg > *').remove();
+				initial();
+			}
+			
+			var width = 960, height = 500;
+			
+			var MAP_KEY = "country";
+			var MAP_VALUE = "publication";
+	    	var projection = d3.geo.mercator()
+				.center([0,5])
+	        	.scale((width + 1) / 2 / Math.PI)
+	        	.translate([width / 2, height / 2])
+	        	.precision(.1);
+  
+	    	
+	    	
+	    	var svg = d3.select("#geomap").append("svg")
+	        	.attr("width", width)
+	        	.attr("height", height);
+	    	var path = d3.geo.path()
+	        	.projection(projection);
+			var g = svg.append("g");
+						
+			d3.json("dataset/world-110m2.json", function(error, topology) {
+				console.log(topology);
+			    g.selectAll("path")
+			      .data(topojson.object(topology, topology.objects.countries)
+			          .geometries)
+			    .enter()
+			      .append("path")
+			      .attr("d", path)
+			});
+
+			// zoom and pan
+			var zoom = d3.behavior.zoom()
+		    	.on("zoom",function() {
+		        	g.attr("transform","translate("+ 
+		            	d3.event.translate.join(",")+")scale("+d3.event.scale+")");
+		        	g.selectAll("path")  
+		            	.attr("d", path.projection(projection)); 
+				});
+
+			svg.call(zoom)
+  			   
+			function initial(){
+				d3.csv(filepath+"_countrytest.csv", function(error, links) {
+					if (error) throw error;
+					else{
+						
+					}
+				    
+				});
+				// d3.queue().defer(d3.json, "").await(ready);
+				
+			}
+		</script>
+	</body>
+</html>
