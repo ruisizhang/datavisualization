@@ -8,6 +8,12 @@
 		
 		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
 		<style>
+			body {
+				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+				width: 1200px;
+				height: 900px;
+				position: relative;
+			}
 			.link {
 			  	stroke: #999;
 		  		
@@ -25,20 +31,41 @@
 		</style>
 	</head>
 	<body>
+		<table width="100%" border="0">
+			<tr>
+				<td bgcolor="#aaa" width="60%">
+					<div class = "sourceSet" style="display:inline">
+						<div style="font-size: 16px; display:inline;">Source</div>
+				
+						<div style=" display:inline;" >
+							<select id = "sourceselect"> </select>
+					 	</div>
+					</div>
+		    	</td>
+				<td bgcolor="#aaa" width="40%">
+	      
+		    	</td>
+				
+			</tr>
+			<tr>
+				<td bgcolor="#FFFFFF" width="60%">
+					<div id = "forcegraph" style="margin-top: 0px; margin-bottom: 15px">
+			
+					</div>
+		    	</td>
+				<td bgcolor="#aaa" width="40%">
+	      
+		    	</td>
+			</tr>
+			
+		</table>
 		<div class="SettingWrap" style="margin-top: 0px; margin-bottom: 15px">
-			<div class = "sourceSet" style="display:inline">
-				<div style="font-size: 16px; display:inline;">Source</div>
-				
-				<div style=" display:inline;" >
-					<select id = "sourceselect"> </select>
-			 	</div>
-			</div>
-			<div id = "forcegraph" style="margin-top: 0px; margin-bottom: 15px">
-				
-			</div>
+			
+			
 			
 		</div>
 		<script type="text/javascript"> 
+			
 			var filepath = "dataset/itsec"
 			var sselect=d3.select("#sourceselect");
 			var soptions=sselect.selectAll('option').data(["IEEE intelligent tranporationsystem", "IEEE Transactions on Evolutionary Computation", "IEEE ITS conference"])
@@ -60,7 +87,7 @@
 					reset();
 				}
 			});
-			var width = 1000,
+			var width = 800,
 				height =800;
 			var rScale = d3.scaleLinear();
 			var color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -68,31 +95,34 @@
 		    	.attr("width", width)
 		    	.attr("height", height);
 
-			var forceSimulation = d3.forceSimulation()
-				.force("charge", d3.forceManyBody().strength(-10))
-			    .force("link", d3.forceLink().id(function(d) { return d.authorid; })
-				.distance(20))
-			    .force("x", d3.forceX(width / 2))
-			    .force("y", d3.forceY(height / 2))
-				.on("tick", tick);
-			function tick() {
-				link.attr("x1", function(d) { return d.source.x; })
-				    .attr("y1", function(d) { return d.source.y; })
-				    .attr("x2", function(d) { return d.target.x; })
-					.attr("y2", function(d) { return d.target.y; });
-				node.attr("cx", function(d) { return d.x; })
-			        .attr("cy", function(d) { return d.y; });
-				}
+			
+			
 			initial()
 			function reset(){
 				d3.selectAll('svg > *').remove();
 				initial();
 			}
-			var link = svg.selectAll(".link"),
-		    	node = svg.selectAll(".node");
-			var text = svg.selectAll(".text");
+			
 							
 			function initial(){
+				var link = svg.selectAll(".link"),
+		    		node = svg.selectAll(".node");
+				var text = svg.selectAll(".text");
+				function tick() {
+					link.attr("x1", function(d) { return d.source.x; })
+					    .attr("y1", function(d) { return d.source.y; })
+					    .attr("x2", function(d) { return d.target.x; })
+						.attr("y2", function(d) { return d.target.y; });
+					node.attr("cx", function(d) { return d.x; })
+				        .attr("cy", function(d) { return d.y; });
+				}
+				var forceSimulation = d3.forceSimulation()
+					.force("charge", d3.forceManyBody().strength(-10))
+			    	.force("link", d3.forceLink().id(function(d) { return d.authorid; })
+					.distance(20))
+			    	.force("x", d3.forceX(width / 2))
+			    	.force("y", d3.forceY(height / 2))
+					.on("tick", tick);
 				d3.csv(filepath+"_GN.csv", function(error, nodes) {
 					if (error) throw error;
 					var rranges = []
